@@ -1,267 +1,147 @@
+import heapq
 
-
-#Projet Algorithmique des graphes#
-
-##################################
-#    Pierre-Emmanuel Scrève      #
-#    Alexandre Mihet             #
-#    L2 TD1                      #
-##################################
-
-#Importation#
-
-
-#Initialisations#
-chaine = "V 0"  # Texte à rechercher
-chaine_2 = 'E '
-liste_nom_sta = []
-liste_traj = []
-liste_lignes = []
-liste_pass = []
-chemin = []
-dico = {}
-dico_lignes = {}
-dico_sta_nom = {}
-dico_nom_code = {}
-
-
-sta_dep_nom = input("Entrer la station de depart ")
-sta_end_nom = input("Entrez la station d'arrivee ")
-
-#Fonctions#
-
-def nom_en_code(sta_dep_nom, sta_end_nom):
-    global dico_nom_code
-    sta_dep = dico_nom_code[sta_dep_nom]
-    sta_end = dico_nom_code[sta_end_nom]
-    return sta_dep, sta_end
-
-def verification(chaine):
-    with open("metro.txt","r") as fichier:
-        with open("test.txt","w") as test:
-            for ligne in fichier:
-                if chaine in ligne:
-                    test.writelines(ligne)
-            
-            test.close()
-        fichier.close()
-
-
-#NE PAS OUBLIER LES DOCSTRING ET LES COMMENTAIRES
-
-# créer une fonction récursive qui va parcourir les arretes et rappeller la fonction sur les sations reliées en mettant les stations parcourues dans une liste pour savoir si on est déjà passé par là
-# mettre les trajets dans des listes de listes pour pouvoir parcorir les listes et pour pouvoir avoir les liaisons lors de l'appel de la fonction ci-dessus
-# on peut prouver que chaque ligne de metro est connexe et utiliser le fait qu'elles soient connexes pour proposer des trajets plus rapidement en ne parcorant que la ligne nécéssaire
-
-def nom_en_code(sta_dep_nom, sta_end_nom):
-    global dico_nom_code
-    sta_dep = dico_nom_code[sta_dep_nom]
-    sta_end = dico_nom_code[sta_end_nom]
-    sta_dep = str(int(sta_dep))
-    sta_end = str(int(sta_end))
-    # print(dico_nom_code)
-    return sta_dep, sta_end
-
-def trajets(liste_traj, chaine):
-    """Permet de mettre les arretes(trajets) dans une liste"""
-    iter_ligne = 0
-    with open("metro.txt", 'r') as file:
-        for ligne in file:
-            if chaine in ligne:
-                if '#' in ligne:
-                    pass
-                else:
-                    liste_traj.append(ligne.split())
-                    liste_traj[iter_ligne][3] = int(liste_traj[iter_ligne][3])
-                    liste_traj[iter_ligne].remove('E')
-                    iter_ligne+=1
-        file.close()
-        return liste_traj
-
-
-
-
-
-def liste_to_dico(liste_traj, dico):
-    """transforme la liste des trajets en dictionaire"""
-    for i in range(len(liste_traj)):
-        if liste_traj[i][0] not in dico :
-            dico[liste_traj[i][0]] =  {liste_traj[i][1]: liste_traj[i][2]}
-        elif liste_traj[i][0] in dico:
-            dico[liste_traj[i][0]].update({liste_traj[i][1]: liste_traj[i][2]})
-
-        if liste_traj[i][1] not in dico:
-            dico[liste_traj[i][1]] = ({liste_traj[i][0]: liste_traj[i][2]})
-        elif liste_traj[i][1] in dico:
-            dico[liste_traj[i][1]].update({liste_traj[i][0]: liste_traj[i][2]})
-
-
-
-
-
-
-
-def verif_connexe(station_d, liste_traj):
-    """fonction qui va parcourir toutes les station et les met dans une liste"""
-    global liste_pass
-    if (len(str(station_d)) > 3) or (len(str(station_d)) < 1):
-        print("la station de départ n'existe pas")
-    else:
-        if station_d not in liste_pass:
-            liste_pass.append(station_d)
-            for i in range(len(liste_traj)):
-                for j in range(len(liste_traj[i])):
-                    if liste_traj[i][j] == ('%s' % (station_d)) and j == 0:
-                        verif_connexe(liste_traj[i][j+1], liste_traj)
-                    if liste_traj[i][j] == ('%s' % (station_d)) and j == 1:
-                        verif_connexe(liste_traj[i][j-1], liste_traj)
-        else:
-            pass
-
-
-#
-
-
-
-def unique(liste = liste_pass):
-    """fonction utilisée pour vérifier si le programme qui vérifie la connexité fonctionne"""
-    vu = []
-    for nombre in liste:
-        if nombre in vu:
-            print ("Nombre déjà vu!")
-        else:
-            vu.append(nombre)
-    if len(vu) == len(liste):
-        print("le graphe est connexe")
-    else:
-        print("le graphe n'est pas connexe")
-
-#
-
-def dijkstra(dico_traj, source):
-    """permet de renvoyer le temps le plus court à partir de la station de départ
-    et revoie aussi les precedents de chaque station"""
-    assert all(dico_traj[u][v] >= 0 for u in dico_traj.keys() for v in dico_traj[u].keys()) #assert permet de vérifier que tous les poids sont positifs, ce qui est nécessaire pour pouvoir utiliser dijkstra
-    precedent = {x:None for x in dico_traj.keys()}
-    dejaTrait =  {x:False for x in dico_traj.keys()}
-    temps = {x:float('inf') for x in dico_traj.keys()}
-    temps[source] = 0
-    a_traiter = [(0, str(source))]
-    while a_traiter:
-        temps_noeud, noeud = a_traiter.pop()
-        if dejaTrait[noeud] == False:
-            dejaTrait[noeud] = True
-            for voisin in dico_traj[noeud].keys():
-                temps_voisin = temps_noeud + dico_traj[noeud][voisin]
-                if temps_voisin < temps[voisin]:
-                    temps[voisin] = temps_voisin
-                    precedent[voisin] = noeud
-                    a_traiter.append((temps_voisin, voisin))
-        a_traiter.sort(reverse = True)
-    return temps, precedent
-
-
-
-
-
-def f_chemin(sta_dep, sta_end, precedent):
-    """Nous permet de recreer le chemin 
-    a partir du dictionnaire des precedent"""
-    global chemin
-    chemin.append(sta_end)
-    current_station = sta_end
+def lire_fichier_metro(nom_fichier):
+    """
+    Lit un fichier contenant des informations sur les stations de métro et les liaisons.
     
-    while current_station != sta_dep:
-        chemin.append(precedent[current_station])
-        current_station = precedent[current_station]
-    chemin.reverse()
-    return chemin
+    :param nom_fichier: Le nom du fichier à lire.
+    :return: Un dictionnaire de stations et un dictionnaire de graphes des liaisons.
+    """
+    stations = {}
+    graph = {}
 
-def metro(liste_lignes, chaine):
-    """revoie une liste avec à la ligne , le nom et le code de chaque station"""
-    iter_ligne = 0
-    with open("metro.txt", 'r') as file:
-        for ligne in file:
-            if chaine in ligne:
-                if '#' in ligne:
-                    pass
-                else:
-                    liste_lignes.append(ligne.split())
-                    del liste_lignes[iter_ligne][0]
-                    liste_lignes[iter_ligne].reverse()
-                    iter_ligne+=1
-        
-        file.close()
-        return liste_lignes
+    with open(nom_fichier, 'r') as f:
+        for line in f:
+            parts = line.strip().split()
+            if parts[0] == 'V':  # Station
+                num_station = int(parts[1])
+                nom_station = ' '.join(parts[2:-1])  # Nom de la station
+                ligne = parts[-1]  # Ligne du métro
+                stations[num_station] = (nom_station, ligne)
+                graph[num_station] = []
+            elif parts[0] == 'E':  # Liaison
+                num_station1 = int(parts[1])
+                num_station2 = int(parts[2])
+                temps = int(parts[3])
+                # Ajouter la liaison dans les deux sens (graphe non orienté)
+                graph[num_station1].append((num_station2, temps))
+                graph[num_station2].append((num_station1, temps))
 
+    return stations, graph
 
-def lignes(liste_lignes, lignes):
-    """fonction qui permet de mettre dans un dictionnaire:
-        -les trations en tant que clés
-        -les lignes ou elles se trouvent en valeur"""
-    for i in range(len(liste_lignes)):
-        ligne = liste_lignes[i][0]
-        station = liste_lignes[i][-1]
-        lignes[station] = ligne
+def dijkstra(graph, start, end, stations):
+    """
+    Calcule le chemin le plus court entre deux stations en minimisant le nombre de changements de ligne.
+    
+    :param graph: Le graphe des stations.
+    :param start: La station de départ.
+    :param end: La station d'arrivée.
+    :param stations: Dictionnaire des stations.
+    :return: Le chemin trouvé et les informations sur le trajet.
+    """
+    distances = {node: (float('inf'), float('inf')) for node in graph}
+    previous_nodes = {node: (None, None) for node in graph}  # (noeud_précédent, ligne_précédente)
+    distances[start] = (0, 0)  # (nombre_de_changements, temps)
 
+    # Priority queue : (nombre_de_changements, temps_de_trajet, node, ligne_précédente)
+    priority_queue = [(0, 0, start, None)]
 
+    while priority_queue:
+        current_changes, current_time, current_node, current_line = heapq.heappop(priority_queue)
 
+        # Si nous atteignons la destination, nous pouvons arrêter
+        if current_node == end:
+            break
 
-def nom_station_dico(liste_lignes, chaine):
-    """sert a assigner le code des stations à leur nom en utilisant un dicionnaire"""
-    global dico_sta_nom, dico_nom_code
-    iter_ligne = 0
-    with open("metro.txt", 'r') as file:
-        for ligne in file:
-            if chaine in ligne:
-                if '#' in ligne:
-                    pass
-                else:
-                    liste_lignes.append(ligne.split())
-                    del liste_lignes[iter_ligne][0]
-                    code = liste_lignes[iter_ligne][0]
-                    del liste_lignes[iter_ligne][0]
-                    ligne = liste_lignes[iter_ligne][-1]
-                    del liste_lignes[iter_ligne][-1]
-                    liste_lignes[iter_ligne] = ' '.join(liste_lignes[iter_ligne])
-                    dico_nom_code[liste_lignes[iter_ligne]] = code
-                    dico_sta_nom[code] = liste_lignes[iter_ligne]
-                    iter_ligne+=1
-        file.close()
-        return dico_sta_nom
+        for neighbor, travel_time in graph[current_node]:
+            neighbor_line = stations[neighbor][1]
 
+            # Déterminer le nombre de changements
+            new_changes = current_changes + (1 if neighbor_line != current_line else 0)
+            new_time = current_time + travel_time
+            
+            # Comparer les nouvelles distances
+            if (new_changes, new_time) < distances[neighbor]:
+                distances[neighbor] = (new_changes, new_time)
+                previous_nodes[neighbor] = (current_node, neighbor_line)  # Enregistrer la station précédente et la ligne
+                heapq.heappush(priority_queue, (new_changes, new_time, neighbor, neighbor_line))
 
-def intineraire(chemin):
-    """permet , avec la liste des precedents, de reconstituer l'ininéraire le plus court"""
-    global dico_lignes, temps, sta_end, dico_sta_nom
-    ligne_pre = dico_lignes['%04d' % int(chemin[0])]
-    print('Vous etes a', dico_sta_nom['%04d' % int(chemin[0])])
-    for i in range(len(chemin)+1):
-        if i == len(chemin):
-            pass
-        else:
-            ligne_current = dico_lignes['%04d' % int(chemin[i])]
-            #ligne_suivant = dico_lignes['%04d' % int(chemin[i+1])]
-            if ligne_current != ligne_pre:
-                print('A', dico_sta_nom['%04d' % int (chemin[i])], 'changez et prenez la ligne', ligne_current)
-            ligne_pre = ligne_current
-    print('Vous devriez arriver à', dico_sta_nom['%04d' % int (chemin[-1])], 'dans ', temps[sta_end]//60, 'minutes')
+    # Reconstruire le chemin
+    path = []
+    current = end
+    while current is not None:
+        path.append(current)
+        current = previous_nodes[current][0] if previous_nodes[current][0] is not None else None
 
+    path.reverse()  # Inverser le chemin
+    return path, distances[end]
 
+def trouver_station_par_nom(stations, nom_recherche):
+    """
+    Recherche le numéro d'une station à partir de son nom.
+    
+    :param stations: Dictionnaire des stations.
+    :param nom_recherche: Nom de la station à rechercher.
+    :return: Le numéro de la station ou None si introuvable.
+    """
+    for num_station, (nom_station, ligne) in stations.items():
+        if nom_station.lower() == nom_recherche.lower():
+            return num_station
+    return None
 
-#Main#
+def afficher_itineraire(stations, path, travel_info):
+    """
+    Affiche l'itinéraire à suivre entre deux stations.
+    
+    :param stations: Dictionnaire des stations.
+    :param path: Le chemin à afficher.
+    :param travel_info: Informations sur le temps de trajet.
+    """
+    if not path:
+        print("Aucun itinéraire trouvé.")
+        return
 
+    travel_time = travel_info[1]
+    print(f"— Vous êtes à {stations[path[0]][0]}.")
 
-#verification(chaine)
-#verif_connexe(sta_dep, liste_traj)
-#unique()
-trajets(liste_traj, chaine_2)
-liste_to_dico(liste_traj, dico)
-nom_station_dico(liste_nom_sta, chaine)
-sta_dep, sta_end = nom_en_code(sta_dep_nom, sta_end_nom)
-temps, precedent = dijkstra(dico, sta_dep)
-f_chemin(sta_dep, sta_end, precedent)
-metro(liste_lignes, chaine)
-lignes(liste_lignes, dico_lignes)
+    current_line = stations[path[0]][1]
+    previous_station_name = stations[path[0]][0]
 
-intineraire(chemin)
+    for i in range(1, len(path)):
+        station_suivante = stations[path[i]]
+
+        # Vérifiez si la ligne change
+        if station_suivante[1] != current_line:
+            # Affiche l'instruction de changement de ligne si ce n'est pas la première station
+            if previous_station_name != stations[path[0]][0]:  # Ne pas répéter pour la première station
+                print(f"— À {previous_station_name}, prenez la ligne {current_line}.")
+            current_line = station_suivante[1]  # Mettre à jour la ligne actuelle
+
+        # Mise à jour du nom de la station précédente
+        previous_station_name = station_suivante[0]  # Mise à jour pour le prochain affichage
+
+    # Arrivée finale
+    print(f"— À {previous_station_name}, prenez la ligne {current_line} direction {stations[path[-1]][0]}.")
+    print(f"— Vous devriez arriver à {stations[path[-1]][0]} dans {travel_time // 60} minutes.")
+
+# Chargement des données
+stations, graph = lire_fichier_metro("metro.txt")
+
+# Demande de la station de départ et de la station d'arrivée
+nom_depart = input("Entrez le nom de la station de départ : ")
+start_station = trouver_station_par_nom(stations, nom_depart)
+
+if start_station is None:
+    print("Station de départ introuvable.")
+else:
+    nom_arrivee = input("Entrez le nom de la station d'arrivée : ")
+    end_station = trouver_station_par_nom(stations, nom_arrivee)
+
+    if end_station is None:
+        print("Station d'arrivée introuvable.")
+    else:
+        # Calcul du chemin le plus court en minimisant le nombre de changements
+        path, travel_info = dijkstra(graph, start_station, end_station, stations)
+
+        # Affichage de l'itinéraire détaillé
+        afficher_itineraire(stations, path, travel_info)

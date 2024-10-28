@@ -1,5 +1,5 @@
 # stations et liens du metro parisien
-# format : V num sommet nom_sommet
+# format : V num sommet nom_sommet ligne
 #          E num_sommet1 num_sommet1 temps_en_secondes
 V 0000 Abbesses 12
 V 0001 Alexandre Dumas 2
